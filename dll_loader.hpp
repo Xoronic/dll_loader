@@ -5,11 +5,15 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
+#elif defined(__linux__)
+#include <dlfcn.h>
 #endif
 
 namespace dll_loader {
 #if defined(_WIN32)
 	using library_ptr = HINSTANCE;
+#else
+        using library_ptr = void*;
 #endif
 	class dynamic_library;
 }
@@ -50,7 +54,7 @@ namespace dll_loader {
 	inline dynamic_library::dynamic_library(const char* path) {
 		m_lib = LoadLibraryA(path);
 		if (m_lib == nullptr) {
-			throw std::runtime_error("Library loading failed: " + last_windows_error());
+			throw std::runtime_error("Library loading failed, OS reports: " + last_windows_error());
 		}
 	}
 
@@ -64,7 +68,7 @@ namespace dll_loader {
 		{
 			return std::function<function_type>(function_address);
 		}
-		throw std::runtime_error("Retrieving the functionpointer failed: " + last_windows_error());
+		throw std::runtime_error("Retrieving the functionpointer failed, OS reports: " + last_windows_error());
 	}
 
 	inline dynamic_library::~dynamic_library() {
@@ -72,7 +76,36 @@ namespace dll_loader {
 	}
 }
 
-// END OF WINDOWS IMPLEMENTATION
+// LINUX IMPLEMENTATION
+#elif defined(__linux__)
+
+namespace dll_loader {
+	inline dynamic_library::dynamic_library(const char* path) {
+		m_lib = dlopen(path, RTLD_LAZY);
+		if (m_lib == nullptr) {
+			throw std::runtime_error(std::string("Library loading failed, OS reports: ") + dlerror());
+		}
+	}
+
+
+	template<typename function_type>
+	inline std::function<function_type> dynamic_library::get_function(const char* name)
+	{
+		auto function_address = (function_type*)dlsym(m_lib, name);
+
+		if (function_address == nullptr)
+		{
+			throw std::runtime_error(std::string("Retrieving the functionpointer failed, OS reports: ") + dlerror());
+		}
+		return std::function<function_type>(function_address);
+	}
+
+	inline dynamic_library::~dynamic_library() {
+		dlclose(m_lib);
+	}
+}
+
+// END OF LINUX IMPLEMENTATION
 
 #else
 #error This platform is not supported.
