@@ -1,5 +1,5 @@
 # dll_loader
-A single-header dynamically linked library loader.
+A single-header library to take away the pain of loading a dynamically linked library. Crossplatform!
 
 ## Installation
 
