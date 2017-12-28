@@ -1,5 +1,6 @@
 # dll_loader
 A single-header library to take away the pain of loading a dynamically linked library. Crossplatform!
+Disclaimer: I don't consider it production-ready, it is not tested very heavily and it lacks some features.
 
 ## Installation
 
